@@ -1,0 +1,33 @@
+{
+  "name": "router-os-monitoring",
+  "module": "index.js",
+  "type": "commonjs",
+  "private": true,
+  "scripts": {
+  "build": "swc src -d dist",
+    "dev": "ts-node src/server.ts",
+    "start": "node dist/src/server.js"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.14.4",
+    "@hono/zod-validator": "^0.7.0",
+    "@redis/client": "^5.5.6",
+    "@typegoose/typegoose": "^12.16.0",
+    "dotenv": "^16.5.0",
+    "hono": "^4.7.11",
+    "mongoose": "^8.15.1",
+    "node-routeros-v2": "^1.6.12",
+    "reflect-metadata": "^0.2.2",
+    "source-map-support": "^0.5.21",
+    "winston": "^3.17.0",
+    "winston-transport": "^4.9.0",
+    "zod": "^3.25.56"
+  },
+  "devDependencies": {
+    "@swc/cli": "^0.7.7",
+    "@swc/core": "^1.11.31",
+    "@types/node": "^22.15.30",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  }
+}
