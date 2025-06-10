@@ -44,7 +44,7 @@ export async function connectRouteros(config: RouterosConfig) {
 
 const routerosPingers = new Map<string, NodeJS.Timeout>();
 
-function startRouterosPing(id: string, conn: RouterOSAPI) {
+function startRouterosPing(_id: string, conn: RouterOSAPI) {
   const interval = setInterval(async () => {
     try {
       const response = await conn.write(
@@ -54,14 +54,14 @@ function startRouterosPing(id: string, conn: RouterOSAPI) {
       );
       const success = response.some((r) => r["time"]);
       logger.info(
-        `[PING] ${id} ${success ? "✅" : "❌"} time: ${response[0].time}`
+        `[PING] ${_id} ${success ? "✅" : "❌"} time: ${response[0].time}`
       );
     } catch (error: any) {
-      logger.warn(`[PING FAILED] ${id} - ${error.message}`);
+      logger.warn(`[PING FAILED] ${_id} - ${error.message}`);
     }
   }, 5000);
 
-  routerosPingers.set(id, interval);
+  routerosPingers.set(_id, interval);
 }
 
 export async function disconnectAllRouterosConnection() {
