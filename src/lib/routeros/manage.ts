@@ -5,6 +5,10 @@ import { logger } from "../logger";
 
 export const routerosConn = new Map<string, RouterOSAPI>();
 
+export function getRouterosConn(_id: string): RouterOSAPI | undefined {
+  return routerosConn.get(_id);
+}
+
 export async function initRouterosConnection() {
   const configs = await routerosService.get();
 

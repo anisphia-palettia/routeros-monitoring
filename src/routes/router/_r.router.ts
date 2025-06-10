@@ -4,8 +4,11 @@ import { router, RouterCreateInput } from "../../schema/router.schema";
 import { routerosService } from "../../service/router.service";
 import { LocalHono } from "../../types/LocalHono";
 import { sendSuccess } from "../../utils/send_response";
+import rInterfaces from "./r.interfaces";
 
 const rRouter = new LocalHono();
+
+rRouter.route("/interface", rInterfaces);
 
 rRouter.post("", validate("json", router.create), async (c) => {
   const data = c.req.valid("json") as RouterCreateInput;

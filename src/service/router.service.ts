@@ -13,4 +13,8 @@ export const routerosService = {
   findByHost(host: string) {
     return RouterModel.findOne({ host });
   },
+
+  findById(_id: string) {
+    return RouterModel.findById(_id);
+  },
 };
