@@ -1,4 +1,4 @@
-import { modelOptions, prop } from "@typegoose/typegoose";
+import { modelOptions, prop, Ref } from "@typegoose/typegoose";
 import { RouterInterface } from "./router_interface.model";
 
 @modelOptions({
@@ -21,6 +21,6 @@ export class Router {
   @prop({ type: () => String, required: true })
   public password!: string;
 
-  @prop({ type: () => [RouterInterface], default: [] })
-  public interfaces!: RouterInterface[];
+  @prop({ ref: () => RouterInterface, default: [] })
+  public interfaces!: Ref<RouterInterface>[];
 }

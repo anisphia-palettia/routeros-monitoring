@@ -1,4 +1,5 @@
-import { modelOptions, prop } from "@typegoose/typegoose";
+import { modelOptions, prop, Ref } from "@typegoose/typegoose";
+import { Router } from "./router.model";
 
 @modelOptions({
   options: { customName: "RouterInterface" },
@@ -16,4 +17,10 @@ export class RouterInterface {
 
   @prop({ required: true })
   public type?: string;
+
+  @prop({ default: false })
+  public isMonitoring?: boolean;
+
+  @prop({ ref: () => Router, required: true })
+  public routerId!: Ref<Router>;
 }

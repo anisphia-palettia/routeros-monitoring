@@ -4,7 +4,7 @@ import { router, RouterCreateInput } from "../../schema/router.schema";
 import { routerosService } from "../../service/router.service";
 import { LocalHono } from "../../types/LocalHono";
 import { sendSuccess } from "../../utils/send_response";
-import rInterfaces from "./r.interfaces";
+import rInterfaces from "./interface/_r.interface";
 
 const rRouter = new LocalHono();
 

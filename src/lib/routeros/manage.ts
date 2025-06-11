@@ -1,6 +1,6 @@
 import { RouterOSAPI } from "node-routeros-v2";
 import { routerosService } from "../../service/router.service";
-import { RouterosConfig } from "../../types/RouterConfig";
+import { IRouterosConfig } from "../../types/RouterConfig";
 import { logger } from "../logger";
 
 export const routerosConn = new Map<string, RouterOSAPI>();
@@ -17,7 +17,7 @@ export async function initRouterosConnection() {
   }
 }
 
-export async function connectRouteros(config: RouterosConfig) {
+export async function connectRouteros(config: IRouterosConfig) {
   if (routerosConn.has(config._id.toString())) {
     logger.warn(`[ALREADY CONNECTED] MikroTik ID: ${config._id}`);
     return;
