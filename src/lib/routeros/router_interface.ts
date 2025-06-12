@@ -47,29 +47,30 @@ export async function getInterfaceTraffic(
     throw new HTTPException(404, { message: "Router not found" });
   }
 
-const response = await conn.write("/interface/monitor-traffic", [
-  "=interface=ether1",
-  "=once=",
-]);
-  // type Traffic = {
-  //   id: string;
-  //   rx_byte: string;
-  //   tx_byte: string;
-  // };
+  const response = await conn.write("/interface/monitor-traffic", [
+    "=interface=main",
+    "=once=",
+  ]);
+  type Traffic = {
+    id: string;
+    rx_mb: string;
+    tx_mb: string;
+  };
 
-  // const traffics = response.map((data) => ({
-  //   id: data[".id"],
-  //   rx_byte: data["rx-byte"],
-  //   tx_byte: data["tx-byte"],
-  // }));
+  const traffics = response.map((data) => ({
+    id: data[".id"],
+    rx_mb: data["rx-bits-per-second"],
+    tx_mb: data["tx-bits-per-second"],
+  }));
 
-  // const traffic: Traffic = traffics[0];
-  // // traffic.rx_byte = bytesToMegabits(traffic.rx_byte);
-  // // traffic.tx_byte = bytesToMegabits(traffic.tx_byte);
+  const traffic: Traffic = traffics[0];
+  traffic.rx_mb = bitsToMegabits(traffic.rx_mb);
+  traffic.tx_mb = bitsToMegabits(traffic.tx_mb);
 
-  return response;
+  console.log(response);
+  return traffic;
 }
 
-function bytesToMegabits(bytes: string): string {
-  return ((Number(bytes) * 8) / 1_000_000).toFixed(2); // megabit (Mb)
+function bitsToMegabits(bits: string): string {
+  return (Number(bits) / 1_000_000).toFixed(2); // dari bit → Megabit
 }
