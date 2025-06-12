@@ -1,28 +1,9 @@
 import { RouterOSAPI } from "node-routeros-v2";
-import { routerosService } from "../../service/router.service";
 import { IRouterosConfig } from "../../types/RouterConfig";
 import { logger } from "../logger";
+import { HTTPException } from "hono/http-exception";
 
-export const routerosConn = new Map<string, RouterOSAPI>();
-
-export function getRouterosConn(_id: string): RouterOSAPI | undefined {
-  return routerosConn.get(_id);
-}
-
-export async function initRouterosConnection() {
-  const configs = await routerosService.get();
-
-  for (const config of configs) {
-    await connectRouteros(config);
-  }
-}
-
-export async function connectRouteros(config: IRouterosConfig) {
-  if (routerosConn.has(config._id.toString())) {
-    logger.warn(`[ALREADY CONNECTED] MikroTik ID: ${config._id}`);
-    return;
-  }
-
+export async function connectRouteros(config: IRouterosConfig): Promise<RouterOSAPI> {
   const conn = new RouterOSAPI({
     host: config.host,
     port: config.port,
@@ -31,51 +12,25 @@ export async function connectRouteros(config: IRouterosConfig) {
     keepalive: true,
   });
 
+  conn.on("error", (err) => {
+    logger.error(`[MikroTik Error] ${config.host}:`, err);
+  });
+
   try {
     await conn.connect();
-    routerosConn.set(config._id.toString(), conn);
     logger.info(`[CONNECTED] MikroTik: ${config.host}`);
-
-    startRouterosPing(config._id.toString(), conn);
-
-    conn.on("error", (err) => {
-      logger.error(`[MikroTik Error] ${config.host}`, err);
-    });
+    return conn;
   } catch (err) {
     logger.error(`[FAILED CONNECT] MikroTik: ${config.host}`, err);
+    throw new HTTPException(500, { message: `Failed to connect to MikroTik ${config.host}` });
   }
 }
 
-const routerosPingers = new Map<string, NodeJS.Timeout>();
-
-function startRouterosPing(_id: string, conn: RouterOSAPI) {
-  const interval = setInterval(async () => {
-    try {
-      const response = await conn.write(
-        "/ping",
-        "=address=8.8.8.8",
-        "=count=1"
-      );
-      const success = response.some((r) => r["time"]);
-      logger.info(
-        `[PING] ${_id} ${success ? "✅" : "❌"} time: ${response[0].time}`
-      );
-    } catch (error: any) {
-      logger.warn(`[PING FAILED] ${_id} - ${error.message}`);
-    }
-  }, 5000);
-
-  routerosPingers.set(_id, interval);
-}
-
-export async function disconnectAllRouterosConnection() {
-  for (const [id, conn] of routerosConn.entries()) {
-    try {
-      await conn.close();
-      logger.info(`[DISCONNECTED] MikroTik ID: ${id}`);
-    } catch (err) {
-      logger.error(`[FAILED TO DISCONNECT] MikroTik ID: ${id}`, err);
-    }
+export async function disconnectRouteros(conn: RouterOSAPI) {
+  try {
+    await conn.close();
+    logger.info(`[DISCONNECTED] MikroTik`);
+  } catch (err) {
+    logger.error(`[ERROR DISCONNECTING] MikroTik:`, err);
   }
-  routerosConn.clear();
 }

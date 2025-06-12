@@ -31,7 +31,7 @@ rDisable.post(
       });
     }
 
-    if (iface.routerId?.toString() !== routerId) {
+    if (iface.router_id?.toString() !== routerId) {
       throw new HTTPException(400, {
         message: "routerId does not match with interface",
       });

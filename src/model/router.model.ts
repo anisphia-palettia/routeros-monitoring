@@ -1,11 +1,13 @@
 import { modelOptions, prop, Ref } from "@typegoose/typegoose";
-import { RouterInterface } from "./router_interface.model";
+import { Types } from "mongoose";
 
 @modelOptions({
   options: { customName: "Router" },
   schemaOptions: { collection: "routers" },
 })
 export class Router {
+  public "_id": Types.ObjectId;
+
   @prop({ type: () => String, required: true })
   public name!: string;
 
@@ -20,7 +22,4 @@ export class Router {
 
   @prop({ type: () => String, required: true })
   public password!: string;
-
-  @prop({ ref: () => RouterInterface, default: [] })
-  public interfaces!: Ref<RouterInterface>[];
 }

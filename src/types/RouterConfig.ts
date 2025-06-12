@@ -11,5 +11,4 @@ export interface IRouterInterface {
   name: string;
   default_name?: string | null;
   type?: string;
-  isMonitoring?: boolean;
 }

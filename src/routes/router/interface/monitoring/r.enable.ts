@@ -1,10 +1,14 @@
 import { HTTPException } from "hono/http-exception";
 import { LocalHono } from "../../../../types/LocalHono";
-import { EnableMonitoringInput, routerInterfaceSchema } from "../../../../schema/router-interface.schema";
+import {
+  EnableMonitoringInput,
+  routerInterfaceSchema,
+} from "../../../../schema/router-interface.schema";
 import validate from "../../../../middlewares/validate";
 import { routerInterfaceService } from "../../../../service/router_interface.service";
 import { sendSuccess } from "../../../../utils/send_response";
 import { getInterfaceTraffic } from "../../../../lib/routeros/router_interface";
+import { genKey, getRouterChan } from "../../../../lib/routeros/store";
 
 const rEnable = new LocalHono();
 
@@ -29,22 +33,34 @@ rEnable.post(
       });
     }
 
-    if (iface.routerId?.toString() !== routerId) {
+    if (iface.router_id?.toString() !== routerId) {
       throw new HTTPException(400, {
         message: "routerId does not match with interface",
       });
     }
 
-    await routerInterfaceService.updateMonitoringStatus(routerId, interfaceId, true);
+    await routerInterfaceService.updateMonitoringStatus(
+      routerId,
+      interfaceId,
+      true
+    );
 
-    const traffic = await getInterfaceTraffic(routerId, interfaceId)
+    const key = genKey(routerId, interfaceId);
+    const isChan = getRouterChan(key);
+
+    if (isChan) {
+      throw new HTTPException(400, {
+        message: "Router interface monitoring enabled",
+      });
+    }
+
+    await getInterfaceTraffic(routerId, interfaceId);
 
     return sendSuccess(c, {
       message: "Monitoring enabled",
       data: {
         interfaceId,
         routerId,
-        traffic
       },
     });
   }

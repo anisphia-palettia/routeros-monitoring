@@ -1,33 +1,56 @@
 import { HTTPException } from "hono/http-exception";
 import { routerInterfaceService } from "../../service/router_interface.service";
 import { IRouterInterface } from "../../types/RouterConfig";
-import { getRouterosConn } from "./manage";
+import { connectRouteros, disconnectRouteros } from "./manage";
+import { routerosService } from "../../service/router.service";
+import { logger } from "../logger";
+import { RouterOSAPI } from "node-routeros-v2";
+import { genKey, routerChan } from "./store";
 
 export async function syncRouterInterfaces(routerId: string): Promise<void> {
-  const conn = getRouterosConn(routerId);
-  if (!conn) {
-    throw new HTTPException(404, { message: "Router not found" });
+  const config = await routerosService.findById(routerId);
+
+  if (!config) {
+    throw new HTTPException(404, {
+      message: "RouterOS not found",
+    });
   }
 
-  const response = await conn.write("/interface/print");
+  let conn: RouterOSAPI | null = null;
 
-  for (const item of response) {
-    const data: IRouterInterface = {
-      interface_id: item[".id"],
-      name: item["name"],
-      default_name: item["default-name"] ?? null,
-      type: item["type"],
-      isMonitoring: false,
-    };
+  try {
+    conn = await connectRouteros(config);
 
-    await routerInterfaceService.createOrUpdate(routerId, data);
+    const response = await conn.write("/interface/print");
+
+    if (!Array.isArray(response)) {
+      throw new Error("Invalid response from RouterOS");
+    }
+
+    for (const item of response) {
+      const data: IRouterInterface = {
+        interface_id: item[".id"],
+        name: item["name"],
+        default_name: item["default-name"] ?? null,
+        type: item["type"],
+      };
+
+      await routerInterfaceService.createOrUpdate(routerId, data);
+    }
+  } catch (err) {
+    logger.error(`[SYNC FAILED] RouterID: ${routerId}`, err);
+    throw new HTTPException(500, { message: "Failed to sync interfaces" });
+  } finally {
+    if (conn) {
+      await disconnectRouteros(conn);
+    }
   }
 }
 
 export async function getInterfaceTraffic(
   routerId: string,
   interfaceId: string
-) {
+): Promise<any> {
   const iface = await routerInterfaceService.findByInterfaceId(interfaceId);
 
   if (!iface) {
@@ -36,41 +59,59 @@ export async function getInterfaceTraffic(
     });
   }
 
-  if (iface.routerId?.toString() !== routerId) {
+  if (iface.router_id.toString() !== routerId) {
     throw new HTTPException(400, {
       message: "routerId does not match with interface",
     });
   }
-  const conn = getRouterosConn(routerId);
 
-  if (!conn) {
+  const config = await routerosService.findById(routerId);
+  if (!config) {
     throw new HTTPException(404, { message: "Router not found" });
   }
 
-  const response = await conn.write("/interface/monitor-traffic", [
-    "=interface=main",
-    "=once=",
-  ]);
-  type Traffic = {
-    id: string;
-    rx_mb: string;
-    tx_mb: string;
-  };
+  const conn = await connectRouteros(config);
 
-  const traffics = response.map((data) => ({
-    id: data[".id"],
-    rx_mb: data["rx-bits-per-second"],
-    tx_mb: data["tx-bits-per-second"],
-  }));
+  return new Promise((resolve, reject) => {
+    const chan = conn.writeStream("/interface/monitor-traffic", [
+      `=interface=${iface.name}`,
+    ]);
 
-  const traffic: Traffic = traffics[0];
-  traffic.rx_mb = bitsToMegabits(traffic.rx_mb);
-  traffic.tx_mb = bitsToMegabits(traffic.tx_mb);
+    const key = genKey(routerId, interfaceId);
+    routerChan.set(key, chan);
 
-  console.log(response);
-  return traffic;
+    let resolved = false;
+
+    chan.on("data", (data) => {
+      console.log("Traffic data:", data);
+      if (!resolved) {
+        resolved = true;
+        resolve(data);
+      }
+    });
+
+    chan.on("done", () => {
+      console.log("Monitoring started successfully");
+    });
+
+    chan.on("error", (err) => {
+      if (!resolve) {
+        resolved = true;
+        console.error("Stream error:", err.message);
+        routerChan.delete(key);
+        chan.close();
+        reject(
+          new HTTPException(400, {
+            message:
+              err.message +
+              ". Interface name may be invalid. Please sync interface data.",
+          })
+        );
+      }
+    });
+  });
 }
 
 function bitsToMegabits(bits: string): string {
-  return (Number(bits) / 1_000_000).toFixed(2); // dari bit → Megabit
+  return (Number(bits) / 1_000_000).toFixed(2);
 }

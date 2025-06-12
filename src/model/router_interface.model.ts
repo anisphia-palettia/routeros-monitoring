@@ -22,5 +22,5 @@ export class RouterInterface {
   public isMonitoring?: boolean;
 
   @prop({ ref: () => Router, required: true })
-  public routerId!: Ref<Router>;
+  public router_id!: Ref<Router>;
 }

@@ -4,10 +4,6 @@ import { APP_PORT } from "./config/app_config";
 import connectDb from "./lib/mongodb";
 import { logger } from "./lib/logger";
 import app from "./app";
-import {
-  disconnectAllRouterosConnection,
-  initRouterosConnection,
-} from "./lib/routeros/manage";
 import { serve } from "@hono/node-server";
 import { connectRedis } from "./lib/redis";
 
@@ -23,11 +19,9 @@ async function main() {
   await connectRedis();
   await connectDb();
   server();
-  await initRouterosConnection();
 
   process.on("SIGINT", async () => {
     logger.info("[SIGINT] Closing connection...");
-    await disconnectAllRouterosConnection();
     logger.info("[CLOSED] Connection. Bye!");
     process.exit(0);
   });

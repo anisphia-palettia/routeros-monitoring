@@ -1,19 +1,14 @@
 import { RouterInterfaceModel, RouterModel } from "../model/_index";
 import { RouterInterface } from "../model/router_interface.model";
 import { IRouterInterface } from "../types/RouterConfig";
-import { Types } from "mongoose";
 
 export const routerInterfaceService = {
   async createOrUpdate(routerId: string, data: IRouterInterface) {
     const updated = await RouterInterfaceModel.findOneAndUpdate(
-      { interface_id: data.interface_id },
-      { $set: { ...data, routerId: new Types.ObjectId(routerId) } },
+      { interface_id: data.interface_id, router_id: routerId },
+      { $set: { ...data } },
       { upsert: true, new: true }
     );
-
-    await RouterModel.findByIdAndUpdate(routerId, {
-      $addToSet: { interfaces: updated._id },
-    });
 
     return updated;
   },
@@ -31,11 +26,10 @@ export const routerInterfaceService = {
   ) {
     return RouterInterfaceModel.findOneAndUpdate(
       {
-        routerId,
+        router_id: routerId,
         interface_id: interfaceId,
       },
-      { isMonitoring: status },
-      { new: true }
+      { isMonitoring: status }
     );
   },
 };
