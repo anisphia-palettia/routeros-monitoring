@@ -11,11 +11,12 @@
       "legacyDecorator": true
     },
     "target": "es2020",
-    "keepClassNames": true
+    "keepClassNames": false // Lebih ringan kalau tidak perlu debugging/logging nama class
   },
   "module": {
     "type": "commonjs",
     "strict": true
   },
-  "sourceMaps": false
+  "minify": true,         // ⚡ aktifkan minifikasi untuk production
+  "sourceMaps": false     // ❌ nonaktifkan sourcemaps agar tidak include ke bundle
 }

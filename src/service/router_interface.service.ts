@@ -1,4 +1,5 @@
 import { RouterInterfaceModel, RouterModel } from "../model/_index";
+import { RouterInterface } from "../model/router_interface.model";
 import { IRouterInterface } from "../types/RouterConfig";
 import { Types } from "mongoose";
 
@@ -15,5 +16,26 @@ export const routerInterfaceService = {
     });
 
     return updated;
+  },
+
+  async findByInterfaceId(
+    interfaceId: string
+  ): Promise<RouterInterface | null> {
+    return RouterInterfaceModel.findOne({ interface_id: interfaceId });
+  },
+
+  async updateMonitoringStatus(
+    routerId: string,
+    interfaceId: string,
+    status: boolean
+  ) {
+    return RouterInterfaceModel.findOneAndUpdate(
+      {
+        routerId,
+        interface_id: interfaceId,
+      },
+      { isMonitoring: status },
+      { new: true }
+    );
   },
 };

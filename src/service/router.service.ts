@@ -1,4 +1,5 @@
 import { RouterModel } from "../model/_index";
+import { Router } from "../model/router.model";
 import { RouterCreateInput } from "../schema/router.schema";
 
 export const routerosService = {
@@ -14,7 +15,7 @@ export const routerosService = {
     return RouterModel.findOne({ host });
   },
 
-  findById(_id: string) {
+  findById(_id: string): Promise<Router | null> {
     return RouterModel.findById(_id);
   },
 };
