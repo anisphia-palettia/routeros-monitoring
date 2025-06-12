@@ -47,8 +47,10 @@ export async function getInterfaceTraffic(
     throw new HTTPException(404, { message: "Router not found" });
   }
 
-  const response = await conn.write("/interface/print", ["?.id=*1"]);
-
+const response = await conn.write("/interface/monitor-traffic", [
+  "=interface=ether1",
+  "=once=",
+]);
   // type Traffic = {
   //   id: string;
   //   rx_byte: string;
