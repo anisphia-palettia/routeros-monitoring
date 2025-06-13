@@ -5,7 +5,15 @@ import { connectRouteros, disconnectRouteros } from "./manage";
 import { routerosService } from "../../service/router.service";
 import { logger } from "../logger";
 import { RouterOSAPI } from "node-routeros-v2";
-import { genKey, routerChan } from "./store";
+import {
+  genKey,
+  getRouterChan,
+  removeRouterChan,
+  setRouterChan,
+} from "./store";
+import { interfaceTrafficService } from "../../service/interface_traffic.service";
+import { InterfaceTraffic } from "../../model/interface-traffic";
+import { runningInterfaceService } from "../../service/running_interface.service";
 
 export async function syncRouterInterfaces(routerId: string): Promise<void> {
   const config = await routerosService.findById(routerId);
@@ -47,7 +55,7 @@ export async function syncRouterInterfaces(routerId: string): Promise<void> {
   }
 }
 
-export async function getInterfaceTraffic(
+export async function startInterfaceTraffic(
   routerId: string,
   interfaceId: string
 ): Promise<any> {
@@ -78,27 +86,28 @@ export async function getInterfaceTraffic(
     ]);
 
     const key = genKey(routerId, interfaceId);
-    routerChan.set(key, chan);
+    setRouterChan(key, chan);
 
     let resolved = false;
 
-    chan.on("data", (data) => {
-      console.log("Traffic data:", data);
+    chan.on("data", async (monit) => {
+      const data: InterfaceTraffic = {
+        router_interface_id: iface._id,
+        tx: bitsToMegabits(monit["tx-bits-per-second"]),
+        rx: bitsToMegabits(monit["rx-bits-per-second"]),
+      };
+      await interfaceTrafficService.create(data);
       if (!resolved) {
         resolved = true;
         resolve(data);
       }
     });
 
-    chan.on("done", () => {
-      console.log("Monitoring started successfully");
-    });
-
     chan.on("error", (err) => {
       if (!resolve) {
         resolved = true;
-        console.error("Stream error:", err.message);
-        routerChan.delete(key);
+        logger.error("Stream error:", err.message);
+        removeRouterChan(key);
         chan.close();
         reject(
           new HTTPException(400, {
@@ -109,9 +118,42 @@ export async function getInterfaceTraffic(
         );
       }
     });
+
+    chan.on("close", async () => {
+      await conn.close();
+      logger.info(`${key} closed`);
+    });
   });
 }
 
-function bitsToMegabits(bits: string): string {
-  return (Number(bits) / 1_000_000).toFixed(2);
+export async function stopInterfaceTraffic(
+  routerId: string,
+  interfaceId: string
+): Promise<boolean> {
+  const key = `${routerId}:${interfaceId}`;
+  const chan = getRouterChan(key);
+
+  if (chan) {
+    await chan.close(); // Tutup stream
+    removeRouterChan(key); // Hapus dari map
+    return true;
+  }
+
+  return false; // Tidak ada channel aktif
+}
+
+function bitsToMegabits(bits: string): number {
+  return Number((Number(bits) / 1_000_000).toFixed(2));
+}
+
+export async function startMonitoringInterface() {
+  const runningMonitoring = await runningInterfaceService.find();
+
+  for (const running of runningMonitoring) {
+    await startInterfaceTraffic(
+      running.router_id.toString(),
+      running.router_interface_id
+    );
+  }
+  logger.info("[SUCCESS] interfaces monitoring started");
 }

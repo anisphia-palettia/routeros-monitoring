@@ -6,6 +6,7 @@ import { logger } from "./lib/logger";
 import app from "./app";
 import { serve } from "@hono/node-server";
 import { connectRedis } from "./lib/redis";
+import { startMonitoringInterface } from "./lib/routeros/router_interface";
 
 function server() {
   logger.info(`[RUNNING] Server port : ${APP_PORT}`);
@@ -18,6 +19,7 @@ function server() {
 async function main() {
   await connectRedis();
   await connectDb();
+  await startMonitoringInterface();
   server();
 
   process.on("SIGINT", async () => {

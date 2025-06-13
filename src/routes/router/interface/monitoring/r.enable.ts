@@ -7,8 +7,9 @@ import {
 import validate from "../../../../middlewares/validate";
 import { routerInterfaceService } from "../../../../service/router_interface.service";
 import { sendSuccess } from "../../../../utils/send_response";
-import { getInterfaceTraffic } from "../../../../lib/routeros/router_interface";
+import { startInterfaceTraffic } from "../../../../lib/routeros/router_interface";
 import { genKey, getRouterChan } from "../../../../lib/routeros/store";
+import { runningInterfaceService } from "../../../../service/running_interface.service";
 
 const rEnable = new LocalHono();
 
@@ -45,7 +46,7 @@ rEnable.post(
       true
     );
 
-    const key = genKey(routerId, interfaceId);
+    const key = genKey(routerId, iface.interface_id);
     const isChan = getRouterChan(key);
 
     if (isChan) {
@@ -54,7 +55,9 @@ rEnable.post(
       });
     }
 
-    await getInterfaceTraffic(routerId, interfaceId);
+    await startInterfaceTraffic(routerId, interfaceId);
+
+    await runningInterfaceService.createOrUpdate(iface.interface_id, routerId);
 
     return sendSuccess(c, {
       message: "Monitoring enabled",

@@ -11,8 +11,8 @@ export class InterfaceTraffic extends TimeStamps {
   public router_interface_id!: Ref<RouterInterface>;
 
   @prop({ required: true })
-  public rx!: string;
+  public rx!: number;
 
   @prop({ required: true })
-  public tx!: string;
+  public tx!: number;
 }

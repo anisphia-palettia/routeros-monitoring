@@ -7,4 +7,4 @@ import { InterfaceTraffic } from "./interface-traffic";
 export const RouterModel = getModelForClass(Router);
 export const RouterInterfaceModel = getModelForClass(RouterInterface);
 export const InterfaceTrafficModel = getModelForClass(InterfaceTraffic);
-export const RunningTrafficModel = getModelForClass(RunningInterface);
+export const RunningInterfaceModel = getModelForClass(RunningInterface);

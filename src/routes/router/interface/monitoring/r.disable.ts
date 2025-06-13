@@ -7,6 +7,14 @@ import {
 import validate from "../../../../middlewares/validate";
 import { routerInterfaceService } from "../../../../service/router_interface.service";
 import { sendSuccess } from "../../../../utils/send_response";
+import {
+  genKey,
+  getRouterChan,
+  removeRouterChan,
+  routerChan,
+} from "../../../../lib/routeros/store";
+import { stopInterfaceTraffic } from "../../../../lib/routeros/router_interface";
+import { runningInterfaceService } from "../../../../service/running_interface.service";
 
 const rDisable = new LocalHono();
 
@@ -37,11 +45,8 @@ rDisable.post(
       });
     }
 
-    await routerInterfaceService.updateMonitoringStatus(
-      routerId,
-      interfaceId,
-      false
-    );
+    await stopInterfaceTraffic(routerId, iface.interface_id);
+    await runningInterfaceService.remove(iface.interface_id, routerId);
 
     return sendSuccess(c, {
       message: "Monitoring disabled",
